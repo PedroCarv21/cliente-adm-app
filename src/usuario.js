@@ -2,7 +2,7 @@ import db from "./database.js";
 import { v4 as uuidv4 } from "uuid";
 
 class Usuario {
-    constructor(id, nome, email, senha, cpf, endereco, dataNascimento) {
+    constructor(id, nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil) {
         this.id = id;
         this.nome = nome;
         this.email = email;
@@ -10,6 +10,7 @@ class Usuario {
         this.cpf = cpf;
         this.endereco = endereco;
         this.dataNascimento = dataNascimento;
+        this.fotoPerfil = fotoPerfil;
     }
 
     static async consultarTodos() {
@@ -22,25 +23,24 @@ class Usuario {
         return rows[0];
     }
 
-    static async cadastrar(nome, email, senha, cpf, endereco, dataNascimento) {
+    static async cadastrar(nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil) {
         const id = uuidv4(); // cria id único
         const statusCliente = "ativo"; // valor inicial do status
         await db.query(
-            "INSERT INTO cliente (id, nome, email, senha, cpf, endereco, data_nascimento, status_cliente) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [id, nome, email, senha, cpf, endereco, dataNascimento, statusCliente]
+            "INSERT INTO cliente (id, nome, email, senha, cpf, endereco, data_nascimento, status_cliente, foto_perfil) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [id, nome, email, senha, cpf, endereco, dataNascimento, statusCliente, fotoPerfil]
         );
         return { id, nome, email };
     }
 
-    static async atualizar(id, nome, senha, cpf, endereco, dataNascimento) {
+    static async atualizar(id, nome, senha, cpf, endereco, dataNascimento, fotoPerfil) {
         const statusCliente = "ativo"; // ou outro valor
         await db.query(
-            "UPDATE cliente SET nome=?, senha=?, cpf=?, endereco=?, data_nascimento=?, status_cliente=? WHERE id=?",
-            [nome, senha, cpf, endereco, dataNascimento, statusCliente, id]
+            "UPDATE cliente SET nome=?, senha=?, cpf=?, endereco=?, data_nascimento=?, status_cliente=?, foto_perfil=? WHERE id=?",
+            [nome, senha, cpf, endereco, dataNascimento, statusCliente, fotoPerfil, id]
         );
         return { message: "Cliente atualizado com sucesso" };
     }
-
 
     static async excluir(email, senha) {
         const statusCliente = "Inativo"; // marca como inativo
@@ -50,7 +50,6 @@ class Usuario {
         );
         return { message: "Cliente marcado como inativo com sucesso" };
     }
-
 }
 
 export default Usuario;

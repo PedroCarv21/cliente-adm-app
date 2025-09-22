@@ -11,8 +11,8 @@ const StatusCliente = {
 };
 
 class Cliente extends Usuario {
-  constructor(id, nome, email, senha, cpf, endereco, dataNascimento, statusCliente) {
-    super(id, nome, email, senha, cpf, endereco, dataNascimento);
+  constructor(id, nome, email, senha, cpf, endereco, dataNascimento, statusCliente, fotoPerfil) {
+    super(id, nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil);
     this.statusCliente = statusCliente;
   }
 }
@@ -33,8 +33,7 @@ router.get("/:id", async (req, res) => {
 
 // Cadastrar
 router.post("/", async (req, res) => {
-  const { nome, email, senha, cpf, endereco, dataNascimento, statusCliente } =
-    req.body;
+  const { nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil } = req.body;
 
   const novoCliente = await Cliente.cadastrar(
     nome,
@@ -42,22 +41,24 @@ router.post("/", async (req, res) => {
     senha,
     cpf,
     endereco,
-    dataNascimento
+    dataNascimento,
+    fotoPerfil
   );
 
-  res.json({ ...novoCliente, statusCliente });
+  res.json({ ...novoCliente, statusCliente: StatusCliente.ATIVO });
 });
 
 // Atualizar
 router.put("/:id", async (req, res) => {
-  const { nome, senha, cpf, endereco, dataNascimento } = req.body;
+  const { nome, senha, cpf, endereco, dataNascimento, fotoPerfil } = req.body;
   const result = await Cliente.atualizar(
     req.params.id,
     nome,
     senha,
     cpf,
     endereco,
-    dataNascimento
+    dataNascimento,
+    fotoPerfil
   );
   res.json(result);
 });
