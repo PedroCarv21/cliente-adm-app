@@ -15,12 +15,32 @@ class Usuario {
 
     static async consultarTodos() {
         const [rows] = await db.query("SELECT * FROM cliente");
+
+        // Converte a foto_perfil de cada cliente para Base64
+        rows.forEach(cliente => {
+            if (cliente.foto_perfil) {
+                cliente.foto_perfil = cliente.foto_perfil.toString('base64');
+            }
+        });
+
         return rows;
     }
 
     static async consultarPorId(id) {
         const [rows] = await db.query("SELECT * FROM cliente WHERE id = ?", [id]);
-        return rows[0];
+
+        if (rows.length > 0) {
+            let cliente = rows[0];
+
+            // Converte a foto_perfil para Base64
+            if (cliente.foto_perfil) {
+                cliente.foto_perfil = cliente.foto_perfil.toString('base64');
+            }
+
+            return cliente;
+        } else {
+            throw new Error('Cliente não encontrado');
+        }
     }
 
     static async cadastrar(nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil) {
