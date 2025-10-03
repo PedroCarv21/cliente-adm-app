@@ -64,10 +64,17 @@ router.put("/:id", async (req, res) => {
 });
 
 // Excluir
+// Cliente.js
 router.delete("/", async (req, res) => {
-  const { email, senha } = req.body;
+  const { email, senha } = req.query; // pega da URL /clientes?email=...&senha=...
+  
+  if (!email || !senha) {
+    return res.status(400).json({ error: "Informe email e senha nos parâmetros da URL" });
+  }
+
   const result = await Cliente.excluir(email, senha);
   res.json(result);
 });
+
 
 export { Cliente, StatusCliente, router as clienteRoutes };
