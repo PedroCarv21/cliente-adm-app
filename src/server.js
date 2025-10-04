@@ -1,6 +1,6 @@
 import express from "express";
 import { clienteRoutes } from "./cliente.js";
-import { administradorRoutes } from "./adm.js";
+import { administradorRoutes } from "./Administrador.js";
 
 const app = express();
 app.use(express.json({ limit: "50mb" }));

@@ -11,6 +11,8 @@ const StatusCliente = {
 };
 
 class Cliente extends Usuario {
+  static tabela = "cliente";
+
   constructor(id, nome, email, senha, cpf, endereco, dataNascimento, statusCliente, fotoPerfil) {
     super(id, nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil);
     this.statusCliente = statusCliente;

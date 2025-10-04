@@ -1,55 +1,51 @@
+// Administrador.js
 import Usuario from "./usuario.js";
 import express from "express";
+import { v4 as uuidv4 } from "uuid";
+import db from "./database.js";
+
 
 const router = express.Router();
 
+const StatusAdministrador = {
+  ATIVO: "Ativo",
+  INATIVO: "Inativo",
+  BLOQUEADO: "Bloqueado",
+  SUSPENSO: "Suspenso",
+};
+
 class Administrador extends Usuario {
-  constructor(id, nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao) {
+  static tabela = "administrador";
+
+  constructor(id, nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao, statusAdm = StatusAdministrador.ATIVO) {
     super(id, nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil);
     this.departamento = departamento;
     this.dataAdmissao = dataAdmissao;
+    this.statusAdm = statusAdm; // novo campo específico
   }
 
-  // Métodos específicos de Administrador (CRUD)
-  static async consultarTodos() {
-    const [rows] = await db.query("SELECT * FROM administrador");
-    return rows;
-  }
-
-  static async consultarPorId(id) {
-    const [rows] = await db.query("SELECT * FROM administrador WHERE id = ?", [id]);
-    return rows[0];
-  }
-
-  static async cadastrar(nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao) {
+  // POST - cadastrar novo administrador
+  static async cadastrar(nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao, statusAdm) {
     const id = uuidv4();
-    await db.query(
-      "INSERT INTO administrador (id, nome, email, senha, cpf, endereco, data_nascimento, foto_perfil, departamento, data_admissao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [id, nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao]
-    );
-    return { id, nome, email };
-  }
 
-  static async atualizar(id, nome, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao) {
     await db.query(
-      "UPDATE administrador SET nome=?, senha=?, cpf=?, endereco=?, data_nascimento=?, foto_perfil=?, departamento=?, data_admissao=? WHERE id=?",
-      [nome, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao, id]
+      `INSERT INTO ${this.tabela} 
+    (id, nome, email, senha, cpf, endereco, data_nascimento, foto_perfil, departamento, data_admissao, status_adm) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao, statusAdm]
     );
-    return { message: "Administrador atualizado com sucesso" };
-  }
 
-  static async excluir(email, senha) {
-    await db.query("DELETE FROM administrador WHERE email=? AND senha=?", [email, senha]);
-    return { message: "Administrador removido com sucesso" };
+    return new Administrador(id, nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao, statusAdm);
   }
 }
 
-// Rotas da API
+// Consultar todos
 router.get("/", async (req, res) => {
   const adms = await Administrador.consultarTodos();
   res.json(adms);
 });
 
+// Consultar por id
 router.get("/:id", async (req, res) => {
   const adm = await Administrador.consultarPorId(req.params.id);
   res.json(adm);
@@ -57,16 +53,47 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", async (req, res) => {
   const { nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao } = req.body;
-  const novoAdm = await Administrador.cadastrar(nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao);
+
+  const statusAdm = StatusAdministrador.ATIVO; // sempre ativo ao cadastrar
+
+  const novoAdm = await Administrador.cadastrar(
+    nome,
+    email,
+    senha,
+    cpf,
+    endereco,
+    dataNascimento,
+    fotoPerfil,
+    departamento,
+    dataAdmissao,
+    statusAdm
+  );
+
   res.json(novoAdm);
 });
 
+// PUT - atualizar administrador existente
 router.put("/:id", async (req, res) => {
-  const { nome, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao } = req.body;
-  const result = await Administrador.atualizar(req.params.id, nome, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao);
+  const { nome, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao, statusAdm } = req.body;
+
+  const result = await Administrador.atualizar(
+    req.params.id,
+    nome,
+    senha,
+    cpf,
+    endereco,
+    dataNascimento,
+    fotoPerfil,
+    departamento,
+    dataAdmissao,
+    statusAdm // novo campo
+  );
+
   res.json(result);
 });
 
+
+// Excluir
 router.delete("/", async (req, res) => {
   const { email, senha } = req.query;
   if (!email || !senha) {
@@ -75,5 +102,6 @@ router.delete("/", async (req, res) => {
   const result = await Administrador.excluir(email, senha);
   res.json(result);
 });
+
 
 export { Administrador, router as administradorRoutes };
