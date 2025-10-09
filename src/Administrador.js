@@ -21,21 +21,43 @@ class Administrador extends Usuario {
     super(id, nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil);
     this.departamento = departamento;
     this.dataAdmissao = dataAdmissao;
-    this.statusAdm = statusAdm; // novo campo específico
+    this.statusAdm = statusAdm;
   }
 
-  // POST - cadastrar novo administrador
+  // POST - cadastrar novo administrador, incluindo statusAdm
   static async cadastrar(nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao, statusAdm) {
     const id = uuidv4();
 
     await db.query(
-      `INSERT INTO ${this.tabela} 
-    (id, nome, email, senha, cpf, endereco, data_nascimento, foto_perfil, departamento, data_admissao, status_adm) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO ${this.tabela} (id, nome, email, senha, cpf, endereco, data_nascimento, foto_perfil, departamento, data_admissao, statusAdm) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [id, nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao, statusAdm]
     );
 
     return new Administrador(id, nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao, statusAdm);
+  }
+
+  // Sobrescrevendo o método 'atualizar' para incluir statusAdm
+  static async atualizar(id, nome, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao, statusAdm) {
+    await db.query(
+      `UPDATE ${this.tabela} SET nome=?, senha=?, cpf=?, endereco=?, data_nascimento=?, foto_perfil=?, departamento=?, data_admissao=?, statusAdm=? WHERE id=?`,
+      [nome, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao, statusAdm, id]
+    );
+    return { message: "Administrador atualizado com sucesso" };
+  }
+
+  // Sobrescrevendo o método 'excluir' para desativar (soft delete)
+  static async excluir(email, senha) {
+    const statusAdm = StatusAdministrador.INATIVO; // marca como inativo
+    const [result] = await db.query(
+      `UPDATE ${this.tabela} SET statusAdm=? WHERE email=? AND senha=?`,
+      [statusAdm, email, senha]
+    );
+
+    if (result.affectedRows === 0) {
+      throw new Error("Administrador não encontrado ou credenciais inválidas.");
+    }
+
+    return { message: "Administrador marcado como inativo com sucesso" };
   }
 }
 
@@ -51,22 +73,13 @@ router.get("/:id", async (req, res) => {
   res.json(adm);
 });
 
+// Cadastrar
 router.post("/", async (req, res) => {
   const { nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao } = req.body;
-
-  const statusAdm = StatusAdministrador.ATIVO; // sempre ativo ao cadastrar
+  const statusAdm = StatusAdministrador.ATIVO; // Sempre ativo ao cadastrar
 
   const novoAdm = await Administrador.cadastrar(
-    nome,
-    email,
-    senha,
-    cpf,
-    endereco,
-    dataNascimento,
-    fotoPerfil,
-    departamento,
-    dataAdmissao,
-    statusAdm
+    nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao, statusAdm
   );
 
   res.json(novoAdm);
@@ -78,30 +91,28 @@ router.put("/:id", async (req, res) => {
 
   const result = await Administrador.atualizar(
     req.params.id,
-    nome,
-    senha,
-    cpf,
-    endereco,
-    dataNascimento,
-    fotoPerfil,
-    departamento,
-    dataAdmissao,
-    statusAdm // novo campo
+    nome, senha, cpf, endereco, dataNascimento, fotoPerfil, departamento, dataAdmissao,
+    statusAdm || StatusAdministrador.ATIVO // Garante que um status seja passado
   );
 
   res.json(result);
 });
 
 
-// Excluir
+// Excluir (desativar) por email e senha
 router.delete("/", async (req, res) => {
   const { email, senha } = req.query;
   if (!email || !senha) {
     return res.status(400).json({ error: "Informe email e senha nos parâmetros da URL" });
   }
-  const result = await Administrador.excluir(email, senha);
-  res.json(result);
+  try {
+    const result = await Administrador.excluir(email, senha);
+    res.json(result);
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
 });
 
 
 export { Administrador, router as administradorRoutes };
+
