@@ -45,6 +45,8 @@ class Usuario {
         }
     }
 
+    
+
     static async cadastrar(nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil) {
         const id = uuidv4();
         await db.query(
