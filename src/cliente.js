@@ -2,6 +2,7 @@ import Usuario from "./usuario.js";
 import express from "express";
 import db from "./database.js";
 import { v4 as uuidv4 } from "uuid";
+import bcrypt from 'bcrypt';
 
 const router = express.Router();
 
@@ -22,61 +23,103 @@ class Cliente extends Usuario {
 
   static async cadastrar(nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil) {
     const id = uuidv4();
-    const statusPadrao = StatusCliente.ATIVO; // Define o status padrão aqui
+    const statusPadrao = StatusCliente.ATIVO;
+
+    // --- INÍCIO DA ALTERAÇÃO ---
+
+    // 1. Definir o "custo" do hash. 10 é um valor padrão e seguro.
+    const saltRounds = 10;
+
+    // 2. Gerar o hash da senha. É uma operação assíncrona.
+    const senhaHash = await bcrypt.hash(senha, saltRounds);
+
+    // --- FIM DA ALTERAÇÃO ---
 
     const sql = `
       INSERT INTO ${this.tabela} 
         (id, nome, email, senha, cpf, endereco, data_nascimento, foto_perfil, status_cliente) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    const values = [id, nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, statusPadrao];
+    // 3. Usar a senhaHash no lugar da senha original
+    const values = [id, nome, email, senhaHash, cpf, endereco, dataNascimento, fotoPerfil, statusPadrao];
 
     await db.query(sql, values);
 
-    // Retorna o objeto completo para a resposta da API
+    // MUITO IMPORTANTE: Nunca retorne a senha ou o hash na resposta da API.
+    // O seu código já faz isso corretamente.
     return { id, nome, email, cpf, endereco, dataNascimento, fotoPerfil, statusCliente: statusPadrao };
   }
 
-  static async atualizar(id, nome, senha, cpf, endereco, dataNascimento, fotoPerfil) {
-    // A query de atualização continua a mesma
-    const sql = `
-      UPDATE ${this.tabela} SET 
-        nome=?, senha=?, cpf=?, endereco=?, data_nascimento=?, foto_perfil=? 
-      WHERE id=?`;
-    
-    const values = [nome, senha, cpf, endereco, dataNascimento, fotoPerfil, id];
+  // DENTRO DA CLASSE Cliente
 
-    // Usamos 'db.query' que já foi importado no arquivo
+  // DENTRO DA CLASSE Cliente
+
+  static async atualizar(id, dadosParaAtualizar) {
+    // --- INÍCIO DA ALTERAÇÃO ---
+
+    // Verifica se o campo 'senha' está presente nos dados para atualizar
+    if (dadosParaAtualizar.senha) {
+      const saltRounds = 10;
+      // Se estiver, gera o hash para a nova senha
+      dadosParaAtualizar.senha = await bcrypt.hash(dadosParaAtualizar.senha, saltRounds);
+    }
+
+    // --- FIM DA ALTERAÇÃO ---
+
+    const campos = Object.keys(dadosParaAtualizar);
+
+    if (campos.length === 0) {
+      throw new Error('Nenhum dado fornecido para atualização.');
+    }
+
+    const setClause = campos.map(campo => {
+      const nomeColuna = campo.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      return `${nomeColuna}=?`;
+    }).join(', ');
+
+    const values = Object.values(dadosParaAtualizar);
+    values.push(id);
+
+    const sql = `UPDATE ${this.tabela} SET ${setClause} WHERE id=?`;
+
     const [result] = await db.query(sql, values);
 
-    // VERIFICAÇÃO CRUCIAL: 'affectedRows' diz quantas linhas foram alteradas.
-    // Se for 0, significa que nenhum cliente com aquele ID foi encontrado.
     if (result.affectedRows === 0) {
-      // Lançamos um erro que será capturado pelo 'catch' da rota
       throw new Error('Cliente não encontrado');
     }
 
     return { message: "Cliente atualizado com sucesso" };
   }
 
+  // DENTRO DA CLASSE Cliente
+
   static async excluir(email, senha) {
-    const statusInativo = StatusCliente.INATIVO; // Usando o enum definido no arquivo
+    // 1. Buscar o cliente no banco de dados usando APENAS o email.
+    const sqlBusca = `SELECT * FROM ${this.tabela} WHERE email = ?`;
+    const [rows] = await db.query(sqlBusca, [email]);
 
-    const sql = `
-      UPDATE ${this.tabela} 
-      SET status_cliente=? 
-      WHERE email=? AND senha=?`;
-    
-    const values = [statusInativo, email, senha];
-
-    // Captura o resultado da query
-    const [result] = await db.query(sql, values);
-
-    // Se nenhuma linha foi afetada, o email/senha não correspondem a nenhum cliente
-    if (result.affectedRows === 0) {
-      // Lança um erro que será capturado pelo 'catch' da rota
+    // 2. Verificar se o cliente existe. Se não existir, rows será um array vazio.
+    // Lançamos um erro genérico para não informar ao atacante se o email ou a senha estão errados.
+    if (rows.length === 0) {
       throw new Error('Cliente não encontrado ou credenciais inválidas');
     }
+
+    const cliente = rows[0];
+    const senhaHashDoBanco = cliente.senha; // O hash que está salvo no DB
+
+    // 3. Comparar a senha fornecida na requisição com o hash do banco.
+    const senhaCorreta = await bcrypt.compare(senha, senhaHashDoBanco);
+
+    // 4. Se a senha estiver incorreta, lançamos o mesmo erro genérico.
+    if (!senhaCorreta) {
+      throw new Error('Cliente não encontrado ou credenciais inválidas');
+    }
+
+    // 5. Se a senha estiver CORRETA, aí sim fazemos a atualização.
+    const statusInativo = StatusCliente.INATIVO;
+    const sqlUpdate = `UPDATE ${this.tabela} SET status_cliente = ? WHERE email = ?`;
+
+    await db.query(sqlUpdate, [statusInativo, email]);
 
     return { message: "Cliente desativado com sucesso" };
   }
@@ -119,13 +162,13 @@ router.get("/:id", async (req, res) => {
 
   } catch (error) {
     // 2. Lógica inteligente no CATCH para diferenciar os erros
-    
+
     // **Adapte esta condição para o seu ORM/biblioteca!**
     // Muitos ORMs adicionam um 'name' ou 'code' específico ao erro.
     // Exemplos: error.name === 'RecordNotFound', error.code === 'P2025' (Prisma)
     // Se o erro indicar "não encontrado", retorne 404.
     if (error.name === 'RecordNotFound' || error.message.includes("não encontrado")) { // Exemplo
-        return res.status(404).json({ erro: "Cliente não encontrado." });
+      return res.status(404).json({ erro: "Cliente não encontrado." });
     }
 
     // Para todos os outros tipos de erro, retorne 500
@@ -133,7 +176,7 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ erro: "Ocorreu um erro interno ao processar a solicitação." });
   }
 
-  
+
 });
 
 // Cadastrar
@@ -149,13 +192,13 @@ router.post("/", async (req, res) => {
   const { nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil } = req.body;
 
   if (!nome || !email || !senha || !cpf) {
-    return res.status(400).json({ 
-      erro: "Requisição inválida. É necessário informar nome, email, senha e cpf." 
+    return res.status(400).json({
+      erro: "Requisição inválida. É necessário informar nome, email, senha e cpf."
     });
   }
 
   try {
-    // 👇 3. A CHAMADA AGORA É MAIS SIMPLES, SEM O PARÂMETRO DE STATUS
+    // 3. A CHAMADA AGORA É MAIS SIMPLES, SEM O PARÂMETRO DE STATUS
     const novoCliente = await Cliente.cadastrar(
       nome,
       email,
@@ -175,7 +218,7 @@ router.post("/", async (req, res) => {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ erro: "Conflito: Já existe um cliente com o email ou CPF informado." });
     }
-    
+
     // 3b. ERRO GENÉRICO: Para todos os outros tipos de erro
     console.error("Erro ao cadastrar novo cliente:", error); // Loga o erro no console para depuração
     res.status(500).json({ erro: "Ocorreu um erro interno no servidor ao tentar cadastrar o cliente." });
@@ -183,44 +226,36 @@ router.post("/", async (req, res) => {
 });
 
 // Atualizar
+// DENTRO DO ARQUIVO cliente.js
+
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
-  const { nome, senha, cpf, endereco, dataNascimento, fotoPerfil } = req.body;
+  const dadosParaAtualizar = req.body; // Pega o corpo inteiro da requisição
 
-  // 1. VALIDAÇÃO DE FORMATO DO ID
+  // Validação de formato do ID (continua a mesma)
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(id)) {
     return res.status(400).json({ erro: "O ID fornecido é inválido. O formato deve ser um UUID." });
   }
 
-  try {
-    const result = await Cliente.atualizar(
-      id,
-      nome,
-      senha,
-      cpf,
-      endereco,
-      dataNascimento,
-      fotoPerfil
-    );
+  // Validação para garantir que o corpo não está vazio
+  if (Object.keys(dadosParaAtualizar).length === 0) {
+    return res.status(400).json({ erro: "Corpo da requisição não pode estar vazio." });
+  }
 
-    // 2. SUCESSO: Se tudo correu bem, retorna 200 OK
+  try {
+    // 👇 A CHAMADA AGORA É MAIS SIMPLES E PODEROSA
+    const result = await Cliente.atualizar(id, dadosParaAtualizar);
+
     res.json(result);
 
   } catch (error) {
-    // 3. TRATAMENTO DE ERROS
-
-    // 3a. NÃO ENCONTRADO: Captura o erro que lançamos no nosso método 'atualizar'
     if (error.message === 'Cliente não encontrado') {
       return res.status(404).json({ erro: error.message });
     }
-
-    // 3b. CONFLITO: Verifica se o erro é de CPF duplicado
     if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({ erro: "Conflito: O CPF informado já está em uso por outro cliente." });
+      return res.status(409).json({ erro: "Conflito: O CPF ou email informado já está em uso por outro cliente." });
     }
-    
-    // 3c. ERRO GENÉRICO: Para todos os outros casos
     console.error("Erro ao atualizar cliente:", error);
     res.status(500).json({ erro: "Ocorreu um erro interno no servidor." });
   }
@@ -230,7 +265,7 @@ router.put("/:id", async (req, res) => {
 // Cliente.js
 router.delete("/", async (req, res) => {
   const { email, senha } = req.query;
-  
+
   // 1. VALIDAÇÃO: Continua a mesma
   if (!email || !senha) {
     return res.status(400).json({ erro: "Informe email e senha nos parâmetros da URL" });
@@ -249,7 +284,7 @@ router.delete("/", async (req, res) => {
     if (error.message === 'Cliente não encontrado ou credenciais inválidas') {
       return res.status(404).json({ erro: error.message });
     }
-    
+
     // 3b. ERRO GENÉRICO: Para qualquer outro erro do servidor
     console.error("Erro ao desativar cliente:", error);
     res.status(500).json({ erro: "Ocorreu um erro interno no servidor." });
