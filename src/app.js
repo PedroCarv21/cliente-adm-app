@@ -7,7 +7,7 @@ const app = express();
 
 // Configuração de CORS para permitir requisições do frontend
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || "*", // Em produção, especifique o domínio do frontend
+  origin: process.env.FRONTEND_URL || "*",
   credentials: true,
   optionsSuccessStatus: 200,
 };

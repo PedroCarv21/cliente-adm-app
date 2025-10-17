@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import ClienteModel from "../models/ClienteModel.js";
 
 class AuthController {
-  // Armazenamento temporário de refresh tokens (em produção, use Redis)
+  // Armazenamento temporário de refresh tokens
   static refreshTokens = new Set();
   static tokenBlacklist = new Set();
 
