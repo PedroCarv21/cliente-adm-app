@@ -41,8 +41,10 @@ app.get("/", (req, res) => {
       clientes: {
         "GET /clientes": "Listar todos os clientes",
         "GET /clientes/:id": "Buscar cliente por ID",
-        "POST /clientes": "Criar novo cliente (público)",
+        "POST /clientes":
+          "Criar novo cliente (aceita FormData com foto ou JSON)",
         "PUT /clientes/:id": "Atualizar cliente",
+        "POST /clientes/:id/foto": "Upload de foto de perfil",
         "DELETE /clientes": "Desativar cliente",
       },
     },

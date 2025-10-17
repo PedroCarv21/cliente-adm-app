@@ -28,6 +28,29 @@ class ClienteModel extends BaseModel {
     this.statusCliente = statusCliente;
   }
 
+  /**
+   * Converte foto BLOB para Base64
+   */
+  static converterFotoParaBase64(fotoBuffer) {
+    if (!fotoBuffer) return null;
+    return `data:image/jpeg;base64,${fotoBuffer.toString("base64")}`;
+  }
+
+  /**
+   * Formata o cliente para retorno (converte foto BLOB para base64)
+   */
+  static formatarCliente(cliente) {
+    if (!cliente) return null;
+
+    return {
+      ...cliente,
+      fotoPerfil: this.converterFotoParaBase64(
+        cliente.foto_perfil || cliente.fotoPerfil
+      ),
+      senha: undefined, // Nunca retornar a senha
+    };
+  }
+
   static async criar(dados) {
     const { nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil } =
       dados;
@@ -52,7 +75,7 @@ class ClienteModel extends BaseModel {
       cpf,
       endereco,
       dataNascimento,
-      fotoPerfil,
+      fotoPerfil || null, // BLOB ou null
       statusPadrao,
     ];
 
@@ -65,7 +88,7 @@ class ClienteModel extends BaseModel {
       cpf,
       endereco,
       dataNascimento,
-      fotoPerfil,
+      fotoPerfil: this.converterFotoParaBase64(fotoPerfil),
       statusCliente: statusPadrao,
     };
   }
@@ -134,10 +157,59 @@ class ClienteModel extends BaseModel {
     return { message: "Cliente desativado com sucesso" };
   }
 
+  static async alterarSenha(id, senhaAtual, novaSenha) {
+    // Buscar o cliente no banco de dados
+    const sqlBusca = `SELECT * FROM ${this.tabela} WHERE id = ?`;
+    const [rows] = await db.query(sqlBusca, [id]);
+
+    if (rows.length === 0) {
+      throw new Error("Cliente não encontrado");
+    }
+
+    const cliente = rows[0];
+
+    // Verificar se o cliente está ativo
+    if (cliente.status_cliente !== StatusCliente.ATIVO) {
+      throw new Error("Cliente não está ativo");
+    }
+
+    // Comparar a senha atual fornecida com o hash do banco
+    const senhaCorreta = await bcrypt.compare(senhaAtual, cliente.senha);
+
+    if (!senhaCorreta) {
+      throw new Error("Senha atual incorreta");
+    }
+
+    // Validar que a nova senha é diferente da atual
+    const senhaIgual = await bcrypt.compare(novaSenha, cliente.senha);
+    if (senhaIgual) {
+      throw new Error("A nova senha deve ser diferente da senha atual");
+    }
+
+    // Criptografar a nova senha
+    const novaSenhaHash = await bcrypt.hash(novaSenha, this.SALT_ROUNDS);
+
+    // Atualizar a senha no banco
+    const sqlUpdate = `UPDATE ${this.tabela} SET senha = ? WHERE id = ?`;
+    await db.query(sqlUpdate, [novaSenhaHash, id]);
+
+    return { message: "Senha alterada com sucesso" };
+  }
+
   static async buscarPorEmail(email) {
     return await db.query(`SELECT * FROM ${this.tabela} WHERE email = ?`, [
       email,
     ]);
+  }
+
+  static async buscarPorId(id) {
+    const cliente = await super.buscarPorId(id);
+    return this.formatarCliente(cliente);
+  }
+
+  static async buscarTodos() {
+    const clientes = await super.buscarTodos();
+    return clientes.map((cliente) => this.formatarCliente(cliente));
   }
 }
 
