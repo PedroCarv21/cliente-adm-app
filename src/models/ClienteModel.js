@@ -157,6 +157,32 @@ class ClienteModel extends BaseModel {
     return { message: "Cliente desativado com sucesso" };
   }
 
+  /**
+   * Desativa um cliente pelo ID (sem necessidade de senha)
+   */
+  static async desativarPorId(id) {
+    // Buscar o cliente no banco de dados
+    const sqlBusca = `SELECT * FROM ${this.tabela} WHERE id = ?`;
+    const [rows] = await db.query(sqlBusca, [id]);
+
+    if (rows.length === 0) {
+      throw new Error("Cliente não encontrado");
+    }
+
+    const cliente = rows[0];
+
+    // Verificar se o cliente já está inativo
+    if (cliente.status_cliente === StatusCliente.INATIVO) {
+      throw new Error("Cliente já está inativo");
+    }
+
+    // Desativar o cliente
+    const sqlUpdate = `UPDATE ${this.tabela} SET status_cliente = ? WHERE id = ?`;
+    await db.query(sqlUpdate, [StatusCliente.INATIVO, id]);
+
+    return { message: "Cliente desativado com sucesso" };
+  }
+
   static async alterarSenha(id, senhaAtual, novaSenha) {
     // Buscar o cliente no banco de dados
     const sqlBusca = `SELECT * FROM ${this.tabela} WHERE id = ?`;

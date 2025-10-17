@@ -207,6 +207,33 @@ class ClienteController {
       res.status(500).json({ erro: "Erro interno do servidor." });
     }
   }
+
+  /**
+   * Desativa um cliente pelo ID
+   */
+  static async desativarPorId(req, res) {
+    const { id } = req.params;
+
+    if (!ValidationUtils.validarUUID(id)) {
+      return res.status(400).json({
+        erro: "O ID fornecido é inválido. O formato deve ser um UUID.",
+      });
+    }
+
+    try {
+      const result = await ClienteModel.desativarPorId(id);
+      res.json(result);
+    } catch (error) {
+      if (error.message === "Cliente não encontrado") {
+        return res.status(404).json({ erro: error.message });
+      }
+      if (error.message === "Cliente já está inativo") {
+        return res.status(400).json({ erro: error.message });
+      }
+      console.error(`Erro ao desativar cliente ${id}:`, error);
+      res.status(500).json({ erro: "Erro interno do servidor." });
+    }
+  }
 }
 
 export default ClienteController;

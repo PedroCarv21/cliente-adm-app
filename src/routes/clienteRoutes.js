@@ -48,6 +48,14 @@ router.put(
   ClienteController.alterarSenha
 );
 
+// PUT /clientes/:id/desativar - Desativa um cliente pelo ID (próprio cliente)
+router.put(
+  "/:id/desativar",
+  autenticar,
+  verificarProprietario,
+  ClienteController.desativarPorId
+);
+
 // DELETE /clientes - Desativa um cliente (próprio cliente apenas)
 router.delete("/", autenticar, ClienteController.desativar);
 
