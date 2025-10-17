@@ -103,7 +103,7 @@ class ClienteModel extends BaseModel {
       throw new Error("Cliente não encontrado");
     }
 
-    return { message: "Cliente atualizado com sucesso" };
+    return await this.buscarPorId(id);
   }
 
   static async desativar(email, senha) {
@@ -132,6 +132,12 @@ class ClienteModel extends BaseModel {
     await db.query(sqlUpdate, [statusInativo, email]);
 
     return { message: "Cliente desativado com sucesso" };
+  }
+
+  static async buscarPorEmail(email) {
+    return await db.query(`SELECT * FROM ${this.tabela} WHERE email = ?`, [
+      email,
+    ]);
   }
 }
 

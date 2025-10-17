@@ -24,17 +24,30 @@ class BaseModel {
     this.fotoPerfil = fotoPerfil;
   }
 
+  static converterColunaParaCampo(obj) {
+    const novoObj = {};
+    for (const [chave, valor] of Object.entries(obj)) {
+      const novaCampo = chave.replace(/_([a-z])/g, (_, letra) =>
+        letra.toUpperCase()
+      );
+      novoObj[novaCampo] = valor;
+    }
+    return novoObj;
+  }
+
   static async buscarTodos() {
+    console.log("Buscando todos os registros da tabela:", this.tabela);
     const [rows] = await db.query(`SELECT * FROM ${this.tabela}`);
 
-    // Converte a foto_perfil de cada registro para Base64
-    rows.forEach((registro) => {
+    // Converte cada registro para camelCase e foto_perfil para Base64
+    return rows.map((registro) => {
       if (registro.foto_perfil) {
         registro.foto_perfil = registro.foto_perfil.toString("base64");
       }
+      // Remove a senha do retorno por segurança
+      delete registro.senha;
+      return this.converterColunaParaCampo(registro);
     });
-
-    return rows;
   }
 
   static async buscarPorId(id) {
@@ -50,7 +63,10 @@ class BaseModel {
         registro.foto_perfil = registro.foto_perfil.toString("base64");
       }
 
-      return registro;
+      // Remove a senha do retorno por segurança
+      delete registro.senha;
+
+      return this.converterColunaParaCampo(registro);
     } else {
       throw new Error("Registro não encontrado");
     }
