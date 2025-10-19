@@ -36,7 +36,7 @@ router.post(
   "/:id/foto",
   autenticar,
   verificarProprietario,
-  upload.single("foto"),
+  upload.single("fotoPerfil"),
   ClienteController.uploadFotoPerfil
 );
 
