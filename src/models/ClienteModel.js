@@ -52,20 +52,20 @@ class ClienteModel extends BaseModel {
   }
 
   static async criar(dados) {
-    const { nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil } =
+    const { nome, email, senha, cpf, endereco, dataNascimento, fotoPerfil, telefone, } =
       dados;
 
     // Validação de campos obrigatórios
-    this.validarCamposObrigatorios(dados, ["nome", "email", "senha", "cpf"]);
+    this.validarCamposObrigatorios(dados, ["nome", "email", "senha", "cpf", "telefone",]);
 
     const id = this.gerarId();
     const statusPadrao = StatusCliente.ATIVO;
     const senhaHash = await bcrypt.hash(senha, this.SALT_ROUNDS);
 
     const sql = `
-      INSERT INTO ${this.tabela} 
-        (id, nome, email, senha, cpf, endereco, data_nascimento, foto_perfil, status_cliente) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    INSERT INTO ${this.tabela} 
+      (id, nome, email, senha, cpf, endereco, data_nascimento, telefone, foto_perfil, status_cliente) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     const values = [
       id,
@@ -75,6 +75,7 @@ class ClienteModel extends BaseModel {
       cpf,
       endereco,
       dataNascimento,
+      telefone,
       fotoPerfil || null, // BLOB ou null
       statusPadrao,
     ];
@@ -88,6 +89,7 @@ class ClienteModel extends BaseModel {
       cpf,
       endereco,
       dataNascimento,
+      telefone,
       fotoPerfil: this.converterFotoParaBase64(fotoPerfil),
       statusCliente: statusPadrao,
     };
