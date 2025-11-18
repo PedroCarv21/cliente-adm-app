@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import AuthController from "../controllers/AuthController.js";
+import config from "../config/config.js";
 
 /**
  * Middleware de autenticação JWT
@@ -31,7 +32,7 @@ export const autenticar = (req, res, next) => {
       .json({ erro: "Token inválido. Faça login novamente." });
   }
 
-  const JWT_SECRET = process.env.JWT_SECRET || "sua_chave_secreta_aqui";
+  const JWT_SECRET = config.jwt.secret;
 
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) {

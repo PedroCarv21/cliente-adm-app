@@ -1,14 +1,13 @@
-import dotenv from "dotenv";
 import app from "./src/app.js";
+import config from "./src/config/config.js";
 
-dotenv.config();
-
-const PORT = process.env.PORT || 3000;
+const PORT = config.server.port;
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
   console.log(`🔐 Sistema de Autenticação Ativo`);
-  console.log(`📍 Ambiente: ${process.env.NODE_ENV || "development"}`);
+  console.log(`📍 Ambiente: ${config.server.nodeEnv}`);
+  console.log(`🌐 CORS: ${config.cors.frontendUrl}`);
   console.log(`\n📋 Endpoints disponíveis:`);
   console.log(`\n🔑 Autenticação:`);
   console.log(`   POST   /auth/login`);

@@ -1,17 +1,17 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import ClienteModel from "../models/ClienteModel.js";
+import config from "../config/config.js";
 
 class AuthController {
   // Armazenamento temporário de refresh tokens
   static refreshTokens = new Set();
   static tokenBlacklist = new Set();
 
-  static JWT_SECRET = process.env.JWT_SECRET || "jwt_secret";
-  static JWT_REFRESH_SECRET =
-    process.env.JWT_REFRESH_SECRET || "jwt_refresh_secret";
-  static JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "15m";
-  static JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
+  static JWT_SECRET = config.jwt.secret;
+  static JWT_REFRESH_SECRET = config.jwt.refreshSecret;
+  static JWT_EXPIRES_IN = config.jwt.expiresIn;
+  static JWT_REFRESH_EXPIRES_IN = config.jwt.refreshExpiresIn;
 
   /**
    * Gera access token e refresh token

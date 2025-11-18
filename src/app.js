@@ -2,12 +2,13 @@ import express from "express";
 import cors from "cors";
 import clienteRoutes from "./routes/clienteRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import config from "./config/config.js";
 
 const app = express();
 
 // Configuração de CORS para permitir requisições do frontend
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || "*",
+  origin: config.cors.frontendUrl,
   credentials: true,
   optionsSuccessStatus: 200,
 };

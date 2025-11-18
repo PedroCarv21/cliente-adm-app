@@ -1,6 +1,7 @@
 import BaseModel from "./BaseModel.js";
 import db from "../db/database.js";
 import bcrypt from "bcrypt";
+import config from "../config/config.js";
 
 export const StatusCliente = {
   ATIVO: "Ativo",
@@ -11,7 +12,7 @@ export const StatusCliente = {
 
 class ClienteModel extends BaseModel {
   static tabela = "cliente";
-  static SALT_ROUNDS = 10;
+  static SALT_ROUNDS = config.security.bcryptSaltRounds;
 
   constructor(
     id,

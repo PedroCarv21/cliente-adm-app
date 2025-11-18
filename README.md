@@ -64,27 +64,56 @@ npm run dev
 
 ## 🗄️ Variáveis de Ambiente
 
-```env
-# Servidor
-PORT=3000
-NODE_ENV=development
+Copie o arquivo `.env.example` para `.env` e configure as variáveis:
 
-# JWT
-JWT_SECRET=sua_chave_secreta_super_segura
-JWT_REFRESH_SECRET=sua_chave_refresh_super_segura
-JWT_EXPIRES_IN=15m
-JWT_REFRESH_EXPIRES_IN=7d
+```bash
+cp .env.example .env
+```
+
+### Variáveis Obrigatórias
+
+```env
+# Configurações de JWT (⚠️ OBRIGATÓRIO - mude em produção!)
+JWT_SECRET=sua_chave_secreta_super_segura_aqui_mude_em_producao
+JWT_REFRESH_SECRET=sua_chave_refresh_token_super_segura_aqui_mude_em_producao
 
 # Banco de Dados
 DB_HOST=localhost
 DB_USER=root
-DB_PASSWORD=senha
-DB_NAME=cliente_adm_db
-DB_PORT=3306
+DB_PASSWORD=sua_senha
+DB_NAME=nome_do_banco
+```
+
+### Variáveis Opcionais (com valores padrão)
+
+```env
+# Servidor
+PORT=3001                           # Porta do servidor (padrão: 3001)
+NODE_ENV=development                # Ambiente: development ou production
+
+# JWT (tempos de expiração)
+JWT_EXPIRES_IN=15m                  # Tempo de expiração do access token (padrão: 15m)
+JWT_REFRESH_EXPIRES_IN=7d           # Tempo de expiração do refresh token (padrão: 7d)
+
+# Banco de Dados
+DB_PORT=3306                        # Porta do MySQL (padrão: 3306)
 
 # CORS
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=http://localhost:5173  # URL do frontend (padrão: *)
+
+# Upload
+MAX_FILE_SIZE_MB=5                  # Tamanho máximo de arquivo em MB (padrão: 5)
+
+# Segurança
+BCRYPT_SALT_ROUNDS=10               # Rounds do bcrypt (padrão: 10)
 ```
+
+### 📝 Notas Importantes
+
+- **JWT_SECRET e JWT_REFRESH_SECRET**: São obrigatórios! Use chaves longas e aleatórias em produção
+- **FRONTEND_URL**: Configure corretamente para evitar problemas de CORS
+- **DB_PASSWORD**: Em produção, sempre use uma senha forte
+- **NODE_ENV=production**: Em produção, algumas validações adicionais serão executadas
 
 ## 🔐 Autenticação e Autorização
 

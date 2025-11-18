@@ -1,5 +1,6 @@
 import multer from "multer";
 import path from "path";
+import config from "../config/config.js";
 
 // Configuração de armazenamento em memória (para converter direto para BLOB)
 const storage = multer.memoryStorage();
@@ -25,7 +26,7 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // Limite de 5MB
+    fileSize: config.upload.maxFileSizeBytes,
   },
 });
 

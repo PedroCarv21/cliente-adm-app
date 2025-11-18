@@ -4,6 +4,8 @@ Este arquivo contém exemplos prontos para testar todos os endpoints da API.
 
 ## 🎯 Fluxo Completo de Uso
 
+> **Nota:** Nos exemplos abaixo, substitua `http://localhost:3001` pela URL configurada em `PORT` no seu arquivo `.env`
+
 ### 1. Registrar um novo cliente
 
 ```bash
