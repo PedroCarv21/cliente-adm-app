@@ -32,3 +32,15 @@
 **/dist
 LICENSE
 README.md
+node_modules
+npm-debug.log
+.env
+.git
+.gitignore
+README.Docker.md
+.DS_Store
+*.log
+coverage
+.vscode
+uploads
+compose.yaml
